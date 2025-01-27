@@ -1,0 +1,102 @@
+---
+
+  - name: Set architecture type
+    ansible.builtin.set_fact:
+      bun_arch: "{{ item.value }}"
+    with_items: "{{ bun_arch_type }}"
+    when: item.key == ansible_architecture
+
+  - name: Set github release URL
+    ansible.builtin.set_fact:
+      bun_version: "tags/{{ bun_version }}"
+    when: bun_version != "latest"
+
+  - name: Get release version with auttenticated user
+    ansible.builtin.uri:
+      url: "{{ bun_repo_base }}/releases/{{ bun_version }}"
+      return_content: true
+      headers:
+        Accept: "application/vnd.github+json"
+        Authorization: "Bearer {{ bun_git_token }}"
+      body_format: json
+    register: _github_release
+    until: _github_release.status == 200
+    retries: "{{ bun_retry_on_failure }}"
+    when: bun_git_token != ""
+
+  - name: Get release version with public user
+    ansible.builtin.uri:
+      url: "{{ bun_repo_base }}/releases/{{ bun_version }}"
+      return_content: true
+      headers:
+        Accept: "application/vnd.github+json"
+      body_format: json
+    register: _github_release
+    until: _github_release.status == 200
+    retries: "{{ bun_retry_on_failure }}"
+    when: bun_git_token == ""
+
+  # set file name
+  - name: Set artifact name for Linux, WIndows or Darwin
+    ansible.builtin.set_fact:
+      bun_filename: "bun-{{ ansible_system | lower }}-{{ bun_arch }}"
+
+  # set file with extension
+  - name: Set artifact name for Linux and Darwin
+    ansible.builtin.set_fact:
+      bun_file_with_extension: "{{ bun_filename }}.zip"
+
+  - name: Set asset ID
+    ansible.builtin.set_fact:
+      asset_id: "{{ item.id }}"
+    with_items: "{{ _github_release.json.assets }}"
+    when: item.name == bun_file_with_extension
+
+  - name: Debug asset ID
+    ansible.builtin.debug:
+      msg: "Debug: ================ {{ bun_filename }} ================"
+
+  - name: Download Bun artifact with authenticated user
+    ansible.builtin.get_url:
+      url: "{{ bun_repo_base }}/releases/assets/{{ asset_id }}"
+      dest: "/tmp/{{ bun_file_with_extension }}"
+      headers:
+        Authorization: "Bearer {{ bun_git_token }}"
+        Accept: "application/octet-stream"
+      mode: '0644'
+    when: bun_git_token != ""
+
+  - name: Download Bun artifact with public user
+    ansible.builtin.get_url:
+      url: "{{ bun_repo_base }}/releases/assets/{{ asset_id }}"
+      dest: "/tmp/{{ bun_file_with_extension }}"
+      headers:
+        Accept: "application/octet-stream"
+      mode: '0644'
+    when: bun_git_token == ""
+
+  # require 'brew install gnu-tar' for macOS. Add as prerequisites later
+  - name: Extract Bun artifact
+    ansible.builtin.unarchive:
+      src: "/tmp/{{ bun_file_with_extension }}"
+      dest: "/tmp"
+      remote_src: true
+
+  - name: Copy Bun binary to global binary
+    ansible.builtin.copy:
+      src: "/tmp/{{ bun_filename }}/bun"
+      dest: "/usr/bin"
+      mode: a+x
+      force: true
+      remote_src: true
+
+  # flush assets after installation
+  - name: Remove Bun artifact
+    ansible.builtin.file:
+      path: /tmp/{{ bun_file_with_extension }}
+      state: absent
+
+  - name: Remove Bun extracted folder
+    ansible.builtin.file:
+      path: /tmp/{{ bun_filename }}
+      state: absent

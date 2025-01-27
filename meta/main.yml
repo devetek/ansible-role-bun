@@ -1,0 +1,31 @@
+---
+
+galaxy_info:
+  role_name: bun
+  author: prakasa1904
+  namespace: terpusat
+  description: Ansible Galaxy role for install Bun.
+  company: Devetek
+  license: MIT
+  min_ansible_version: "2.11"
+
+  platforms:
+    # Removed unsupported macOS platform
+
+    - name: Debian
+      versions:
+        - bookworm
+        - bullseye
+        - buster
+
+    - name: Ubuntu
+      versions:
+        - bionic
+        - jammy
+        - focal
+
+  galaxy_tags:
+    - javascript
+    - system
+    - bun
+dependencies: []
