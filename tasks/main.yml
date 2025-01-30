@@ -54,7 +54,7 @@
 
   - name: Debug asset ID
     ansible.builtin.debug:
-      msg: "Debug: ================ {{ bun_filename }} ================"
+      msg: "Debug: ================ {{ bun_version }} {{ bun_filename }} ================"
 
   - name: Download Bun artifact with authenticated user
     ansible.builtin.get_url:
