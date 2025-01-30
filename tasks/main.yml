@@ -8,12 +8,12 @@
 
   - name: Set github release URL
     ansible.builtin.set_fact:
-      bun_version: "tags/{{ bun_version }}"
+      bun_valid_version: "tags/{{ bun_version }}"
     when: bun_version != "latest"
 
   - name: Get release version with auttenticated user
     ansible.builtin.uri:
-      url: "{{ bun_repo_base }}/releases/{{ bun_version }}"
+      url: "{{ bun_repo_base }}/releases/{{ bun_valid_version }}"
       return_content: true
       headers:
         Accept: "application/vnd.github+json"
@@ -26,7 +26,7 @@
 
   - name: Get release version with public user
     ansible.builtin.uri:
-      url: "{{ bun_repo_base }}/releases/{{ bun_version }}"
+      url: "{{ bun_repo_base }}/releases/{{ bun_valid_version }}"
       return_content: true
       headers:
         Accept: "application/vnd.github+json"
@@ -51,10 +51,6 @@
       asset_id: "{{ item.id }}"
     with_items: "{{ _github_release.json.assets }}"
     when: item.name == bun_file_with_extension
-
-  - name: Debug asset ID
-    ansible.builtin.debug:
-      msg: "Debug: ================ {{ bun_version }} {{ bun_filename }} ================"
 
   - name: Download Bun artifact with authenticated user
     ansible.builtin.get_url:
