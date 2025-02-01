@@ -1,0 +1,11 @@
+---
+# flush assets after installation
+- name: Remove Bun artifact
+  ansible.builtin.file:
+    path: /tmp/{{ bun_file_with_extension }}
+    state: absent
+
+- name: Remove Bun extracted folder
+  ansible.builtin.file:
+    path: /tmp/{{ bun_filename }}
+    state: absent

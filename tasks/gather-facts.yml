@@ -1,0 +1,23 @@
+---
+  - name: Set architecture type
+    ansible.builtin.set_fact:
+      bun_arch: "{{ item.value }}"
+    with_items: "{{ bun_arch_type }}"
+    when: item.key == ansible_architecture
+  
+  - name: Set specific bun version
+    ansible.builtin.set_fact:
+      bun_valid_version: "tags/{{ bun_version }}"
+    when: bun_version != "latest"
+  
+  - name: Set artifact name based on OS and architecture
+    ansible.builtin.set_fact:
+      bun_filename: "bun-{{ ansible_system | lower }}-{{ bun_arch }}"
+    
+  - name: Set artifact file extension
+    ansible.builtin.set_fact:
+      bun_file_with_extension: "{{ bun_filename }}.zip"
+  
+  - name: Multi - Set fact specific bun version directory
+    ansible.builtin.set_fact:
+      bun_multi_version_directory: "/usr/local/bunenv/versions/{{ bun_version | replace('bun-v','') }}"

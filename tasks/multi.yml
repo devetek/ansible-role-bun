@@ -1,0 +1,32 @@
+---
+- block:
+    - name: Multi - create a directory if specific version does not exist
+      ansible.builtin.file:
+        path: "{{ bun_multi_version_directory }}"
+        state: directory
+
+    - name: Multi - Copy Bun binary to folder specific version
+      ansible.builtin.copy:
+        src: "/tmp/{{ bun_filename }}/bun"
+        dest: "{{ bun_multi_version_directory }}/bun"
+        mode: a+x
+        force: true
+        remote_src: true
+  when:
+    - bun_multi_version | default(false)
+
+- block:
+  # - name: Remove existing bun file or symbolic link
+  #   ansible.builtin.file:
+  #     path: /tmp/{{ bun_file_with_extension }}
+  #     state: absent
+
+  - name: Create a symbolic link bun specific version
+    ansible.builtin.file:
+      src: "{{ bun_multi_version_directory }}/bun"
+      dest: "/usr/bin/bun"
+      state: link
+      force: true
+  when:
+    - bun_multi_version | default(false)
+    - bun_multi_set_default | default(false)

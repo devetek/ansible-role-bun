@@ -1,0 +1,57 @@
+---
+  - name: Get release version with auttenticated user
+    ansible.builtin.uri:
+      url: "{{ bun_repo_base }}{{ bun_valid_version }}"
+      return_content: true
+      headers:
+        Accept: "application/vnd.github+json"
+        Authorization: "Bearer {{ bun_git_token }}"
+      body_format: json
+    register: _github_release
+    until: _github_release.status == 200
+    retries: "{{ bun_retry_on_failure }}"
+    when: bun_git_token != ""
+
+  - name: Get release version with public user
+    ansible.builtin.uri:
+      url: "{{ bun_repo_base }}{{ bun_valid_version }}"
+      return_content: true
+      headers:
+        Accept: "application/vnd.github+json"
+      body_format: json
+    register: _github_release
+    until: _github_release.status == 200
+    retries: "{{ bun_retry_on_failure }}"
+    when: bun_git_token == ""
+
+  - name: Set github asset id
+    ansible.builtin.set_fact:
+      asset_id: "{{ item.id }}"
+    with_items: "{{ _github_release.json.assets }}"
+    when: item.name == bun_file_with_extension
+
+  - name: Download bun artifact with authenticated user
+    ansible.builtin.get_url:
+      url: "{{ bun_repo_base }}assets/{{ asset_id }}"
+      dest: "/tmp/{{ bun_file_with_extension }}"
+      headers:
+        Authorization: "Bearer {{ bun_git_token }}"
+        Accept: "application/octet-stream"
+      mode: '0644'
+    when: bun_git_token != ""
+
+  - name: Download bun artifact with public user
+    ansible.builtin.get_url:
+      url: "{{ bun_repo_base }}assets/{{ asset_id }}"
+      dest: "/tmp/{{ bun_file_with_extension }}"
+      headers:
+        Accept: "application/octet-stream"
+      mode: '0644'
+    when: bun_git_token == ""
+
+  # require 'brew install gnu-tar' for macOS. Add as prerequisites later
+  - name: Extract bun artifact
+    ansible.builtin.unarchive:
+      src: "/tmp/{{ bun_file_with_extension }}"
+      dest: "/tmp"
+      remote_src: true

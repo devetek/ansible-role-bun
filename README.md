@@ -40,6 +40,11 @@ Example Playbook
     - devetek.bun
 ```
 
+Todo
+-------
+- [ ] Support local user or global installation
+
+
 License
 -------
 
