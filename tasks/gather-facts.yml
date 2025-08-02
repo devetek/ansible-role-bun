@@ -7,7 +7,7 @@
   
   - name: Set specific bun version
     ansible.builtin.set_fact:
-      bun_valid_version: "tags/{{ bun_version }}"
+      bun_valid_version: "tags/bun-v{{ bun_version }}"
     when: bun_version != "latest"
   
   - name: Set artifact name based on OS and architecture
